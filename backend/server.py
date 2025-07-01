@@ -192,7 +192,7 @@ async def analyze_symptoms_with_ai(symptoms: str, patient_id: str) -> SymptomAna
                 "urgency_level": "Low/Medium/High/Emergency",
                 "additional_notes": "helpful advice and disclaimers"
             }"""
-        ).with_model("openai", "gpt-4o")
+        ).with_model("deepseek", "deepseek-r1-0528:free")
         
         user_message = UserMessage(
             text=f"Patient symptoms: {symptoms}\n\nPlease analyze these symptoms and provide recommendations."
