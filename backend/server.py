@@ -172,33 +172,48 @@ async def get_current_user(credentials: HTTPAuthorizationCredentials = Depends(s
 # AI-Powered Symptom Analysis
 async def analyze_symptoms_with_ai(symptoms: str, patient_id: str) -> SymptomAnalysisResponse:
     try:
-        # Initialize AI chat
-        chat = LlmChat(
-            api_key=os.environ['OPENAI_API_KEY'],
-            session_id=f"symptom_analysis_{patient_id}_{datetime.now().timestamp()}",
-            system_message="""You are an AI medical assistant helping with symptom analysis for hospital appointment scheduling. 
-            Your role is to:
-            1. Analyze patient symptoms
-            2. Suggest appropriate medical specialties
-            3. Assess urgency level (Low, Medium, High, Emergency)
-            4. Provide helpful guidance
-            
-            IMPORTANT: Always include medical disclaimers and encourage patients to seek professional medical advice.
-            
-            Respond in JSON format with:
-            {
-                "analysis": "detailed analysis of symptoms",
-                "recommended_specialties": ["list", "of", "specialties"],
-                "urgency_level": "Low/Medium/High/Emergency",
-                "additional_notes": "helpful advice and disclaimers"
-            }"""
-        ).with_model("deepseek", "deepseek-r1-0528:free")
+        # Initialize OpenRouter client
+        from openai import OpenAI
         
-        user_message = UserMessage(
-            text=f"Patient symptoms: {symptoms}\n\nPlease analyze these symptoms and provide recommendations."
+        client = OpenAI(
+            base_url="https://openrouter.ai/api/v1",
+            api_key=os.environ['OPENAI_API_KEY']
         )
         
-        ai_response = await chat.send_message(user_message)
+        completion = client.chat.completions.create(
+            extra_headers={
+                "HTTP-Referer": "https://hospital-booking-system.com",
+                "X-Title": "Hospital AI Symptom Analysis",
+            },
+            model="deepseek/deepseek-r1-0528:free",
+            messages=[
+                {
+                    "role": "system",
+                    "content": """You are an AI medical assistant helping with symptom analysis for hospital appointment scheduling. 
+                    Your role is to:
+                    1. Analyze patient symptoms
+                    2. Suggest appropriate medical specialties
+                    3. Assess urgency level (Low, Medium, High, Emergency)
+                    4. Provide helpful guidance
+                    
+                    IMPORTANT: Always include medical disclaimers and encourage patients to seek professional medical advice.
+                    
+                    Respond in JSON format with:
+                    {
+                        "analysis": "detailed analysis of symptoms",
+                        "recommended_specialties": ["list", "of", "specialties"],
+                        "urgency_level": "Low/Medium/High/Emergency",
+                        "additional_notes": "helpful advice and disclaimers"
+                    }"""
+                },
+                {
+                    "role": "user",
+                    "content": f"Patient symptoms: {symptoms}\n\nPlease analyze these symptoms and provide recommendations."
+                }
+            ]
+        )
+        
+        ai_response = completion.choices[0].message.content
         
         # Parse AI response (assuming it returns JSON)
         import json
