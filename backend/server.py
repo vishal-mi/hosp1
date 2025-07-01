@@ -171,24 +171,21 @@ async def get_current_user(credentials: HTTPAuthorizationCredentials = Depends(s
 # AI-Powered Symptom Analysis
 async def analyze_symptoms_with_ai(symptoms: str, patient_id: str) -> SymptomAnalysisResponse:
     try:
-        # Initialize OpenRouter client
-        from openai import OpenAI
+        # Use direct HTTP requests to OpenRouter
+        import httpx
         
         api_key = os.environ['OPENAI_API_KEY']
-        logging.info(f"Using API key: {api_key[:10]}...{api_key[-10:]}")
         
-        client = OpenAI(
-            base_url="https://openrouter.ai/api/v1",
-            api_key=api_key
-        )
+        headers = {
+            "Authorization": f"Bearer {api_key}",
+            "Content-Type": "application/json",
+            "HTTP-Referer": "https://hospital-booking-system.com",
+            "X-Title": "Hospital AI Symptom Analysis"
+        }
         
-        completion = client.chat.completions.create(
-            extra_headers={
-                "HTTP-Referer": "https://hospital-booking-system.com",
-                "X-Title": "Hospital AI Symptom Analysis",
-            },
-            model="deepseek/deepseek-r1-0528:free",
-            messages=[
+        payload = {
+            "model": "deepseek/deepseek-r1-0528:free",
+            "messages": [
                 {
                     "role": "system",
                     "content": """You are an AI medical assistant helping with symptom analysis for hospital appointment scheduling. 
@@ -213,9 +210,20 @@ async def analyze_symptoms_with_ai(symptoms: str, patient_id: str) -> SymptomAna
                     "content": f"Patient symptoms: {symptoms}\n\nPlease analyze these symptoms and provide recommendations."
                 }
             ]
-        )
+        }
         
-        ai_response = completion.choices[0].message.content
+        async with httpx.AsyncClient() as client:
+            response = await client.post(
+                "https://openrouter.ai/api/v1/chat/completions",
+                headers=headers,
+                json=payload
+            )
+            
+            if response.status_code == 200:
+                result = response.json()
+                ai_response = result["choices"][0]["message"]["content"]
+            else:
+                raise Exception(f"OpenRouter API error: {response.status_code} - {response.text}")
         
         # Parse AI response (assuming it returns JSON)
         import json
