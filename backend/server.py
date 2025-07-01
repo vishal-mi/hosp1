@@ -174,9 +174,12 @@ async def analyze_symptoms_with_ai(symptoms: str, patient_id: str) -> SymptomAna
         # Initialize OpenRouter client
         from openai import OpenAI
         
+        api_key = os.environ['OPENAI_API_KEY']
+        logging.info(f"Using API key: {api_key[:10]}...{api_key[-10:]}")
+        
         client = OpenAI(
             base_url="https://openrouter.ai/api/v1",
-            api_key=os.environ['OPENAI_API_KEY']
+            api_key=api_key
         )
         
         completion = client.chat.completions.create(
