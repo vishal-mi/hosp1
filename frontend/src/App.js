@@ -17,16 +17,20 @@ function App() {
       // Set default auth header
       axios.defaults.headers.common['Authorization'] = `Bearer ${token}`;
       
-      // Try to get user info from token
-      try {
-        const payload = JSON.parse(atob(token.split('.')[1]));
-        const userData = JSON.parse(localStorage.getItem('user'));
-        if (userData && payload.exp > Date.now() / 1000) {
-          setUser(userData);
-        } else {
+      // Try to get user info from token or localStorage
+      const userData = JSON.parse(localStorage.getItem('user') || 'null');
+      if (userData) {
+        try {
+          const payload = JSON.parse(atob(token.split('.')[1]));
+          if (payload.exp > Date.now() / 1000) {
+            setUser(userData);
+          } else {
+            logout();
+          }
+        } catch (error) {
           logout();
         }
-      } catch (error) {
+      } else {
         logout();
       }
     }
